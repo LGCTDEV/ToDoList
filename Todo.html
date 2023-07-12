@@ -15,10 +15,16 @@
     </div>
     <p>Add items on the list, you can click on an item to check it off</p>
     <div id="container">
-      <input id="note" type="text" placeholder="Add something" />
-      <button type="button" onclick="createTodo()">Add</button>
-      <button type="button" onclick="deleteTodos()">Delete all</button>
-    </div>
+  <input id="note" type="text" placeholder="Add something" />
+  <select id="priority">
+    <option value="low">Low</option>
+    <option value="medium">Medium</option>
+    <option value="high">High</option>
+  </select>
+  <button type="button" onclick="createTodo()">Add</button>
+  <button type="button" onclick="deleteTodos()">Delete all</button>
+  <button type="button" onclick="sortTodosByPriority()">Sort by priority</button>
+</div>
     <script src="./script.js"></script>
   </body>
 </html>
