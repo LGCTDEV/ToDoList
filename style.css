@@ -1,7 +1,12 @@
+body {
+	background-image: url(./bg.jpg);
+}
+
 h1,
 p,
 #container {
   text-align: center;
+  font-weight: bold;  
 }
 
 li {
@@ -9,7 +14,14 @@ li {
   border-bottom: 1px solid #CCC;
   height: auto;
   background-color: #F0F0F0;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+}
+
+li button {
+  margin-left: auto;
 }
 
 li:hover {
@@ -20,7 +32,7 @@ li:hover {
   -o-transition: all 0.2s;
 }
 
-.notes {
+.note {
   display: flex;
   justify-content: center;
   flex-direction: column;
@@ -31,4 +43,21 @@ li:hover {
   line-height: 20px;
   margin: 0 auto;
   width: auto;
+}
+
+.high {
+  background-color: #ff3333;
+}
+
+.medium {
+  background-color: #ffb84d;
+}
+
+.low {
+  background-color: #47d147;
+}
+
+#todos-container {
+  padding: 0;
+  margin: 0;
 }
