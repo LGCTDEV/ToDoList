@@ -13,11 +13,20 @@ window.onload = function() {
 function loadTodos() {
   // Récupère les todos depuis le localStorage, ou crée un tableau vide s'il n'y en a pas
   const todos = JSON.parse(localStorage.getItem('todos')) || [];
+  let didUpdateIds = false;
 
   // Parcourt chaque todo dans le tableau et crée un élément correspondant dans l'interface
   todos.forEach(function(todo) {
-    createTodoElement(todo.text, todo.priority, todo.isCompleted);
+    if (!todo.id) {
+      todo.id = createTodoId();
+      didUpdateIds = true;
+    }
+    createTodoElement(todo.text, todo.priority, todo.isCompleted, todo.id);
   });
+
+  if (didUpdateIds) {
+    localStorage.setItem('todos', JSON.stringify(todos));
+  }
 }
 
 function createTodo() {
@@ -28,19 +37,20 @@ function createTodo() {
   if (userInput != '') {
     // Récupère la valeur de la priorité sélectionnée par l'utilisateur
     const priority = document.getElementById('priority').value;
+    const todoId = createTodoId();
 
     // Crée un nouvel élément de todo dans l'interface
-    createTodoElement(userInput, priority, false);
+    createTodoElement(userInput, priority, false, todoId);
 
     // Sauvegarde le todo dans le localStorage
-    saveTodoInLocalStorage(userInput, priority);
+    saveTodoInLocalStorage(todoId, userInput, priority);
 
     // Réinitialise la zone de saisie de l'utilisateur
     document.getElementById('note').value = '';
   }
 }
 
-function createTodoElement(todo, priority, isCompleted) {
+function createTodoElement(todo, priority, isCompleted, todoId) {
   // Crée les éléments HTML nécessaires pour représenter un todo
   const listItem = document.createElement("li");
   const todoContainer = document.createElement("div");
@@ -49,6 +59,7 @@ function createTodoElement(todo, priority, isCompleted) {
   const editButton = document.createElement("button");
 
   // Définit le texte du todo, des boutons de suppression et d'édition
+  listItem.dataset.todoId = todoId;
   todoText.innerHTML = todo;
   deleteButton.innerHTML = "Delete";
   editButton.innerHTML = "Edit";
@@ -74,7 +85,7 @@ function createTodoElement(todo, priority, isCompleted) {
       todoText.innerHTML = userInput;
       listItem.className = '';
       listItem.classList.add(priorityInput);
-      updateTodoInLocalStorage(todo, userInput, priority, priorityInput);
+      updateTodoInLocalStorage(todoId, userInput, priorityInput);
     } else if (priorityInput != null && priorityInput != "" && !["low", "medium", "high"].includes(priorityInput)) {
       // Affiche une alerte si la priorité saisie n'est pas valide
       alert("Invalid priority. Please try again with 'low', 'medium', or 'high'.");
@@ -101,12 +112,16 @@ function createTodoElement(todo, priority, isCompleted) {
   todosContainerElement.appendChild(listItem);
 }
 
-function updateTodoInLocalStorage(oldTodo, newTodo, oldPriority, newPriority) {
+function updateTodoInLocalStorage(todoId, newTodo, newPriority) {
   // Récupère les todos depuis le localStorage
   const todos = JSON.parse(localStorage.getItem('todos')) || [];
 
   // Trouve l'index du todo à mettre à jour dans le tableau des todos
-  const todoIndex = todos.findIndex(todo => todo.text === oldTodo && todo.priority === oldPriority);
+  const todoIndex = todos.findIndex(todo => todo.id === todoId);
+
+  if (todoIndex === -1) {
+    return;
+  }
 
   // Met à jour le texte et la priorité
   todos[todoIndex].text = newTodo;
@@ -116,12 +131,12 @@ function updateTodoInLocalStorage(oldTodo, newTodo, oldPriority, newPriority) {
   localStorage.setItem('todos', JSON.stringify(todos));
 }
 
-function saveTodoInLocalStorage(todo, priority) {
+function saveTodoInLocalStorage(todoId, todo, priority) {
   // Récupère les todos depuis le localStorage, ou crée un tableau vide s'il n'y en a pas
   const todos = JSON.parse(localStorage.getItem('todos')) || [];
 
   // Ajoute le nouveau todo avec sa priorité et son statut de complétion au tableau
-  todos.push({ text: todo, priority: priority, isCompleted: false });
+  todos.push({ id: todoId, text: todo, priority: priority, isCompleted: false });
 
   // Sauvegarde les todos dans le localStorage
   localStorage.setItem('todos', JSON.stringify(todos));
@@ -137,14 +152,24 @@ function deleteTodos() {
 }
 
 function deleteTodo(event) {
-  // Récupère le texte du todo à supprimer en utilisant l'événement du bouton de suppression
-  const todoText = event.target.parentNode.textContent.replace("DeleteEdit", "");
+  // Récupère l'identifiant du todo à supprimer depuis l'élément de liste
+  const listItem = event.target.closest("li");
+
+  if (!listItem) {
+    return;
+  }
+
+  const todoId = listItem.dataset.todoId;
 
   // Récupère les todos depuis le localStorage
   const todos = JSON.parse(localStorage.getItem('todos')) || [];
 
   // Trouve l'index du todo à supprimer dans le tableau des todos
-  const todoIndex = todos.findIndex(todo => todo.text === todoText);
+  const todoIndex = todos.findIndex(todo => todo.id === todoId);
+
+  if (todoIndex === -1) {
+    return;
+  }
 
   // Supprime le todo du tableau des todos
   todos.splice(todoIndex, 1);
@@ -153,23 +178,32 @@ function deleteTodo(event) {
   localStorage.setItem('todos', JSON.stringify(todos));
 
   // Supprime l'élément de liste du todo de l'interface
-  event.target.parentNode.parentNode.remove();
+  listItem.remove();
 }
 
 function todoCheck(event) {
   // Vérifie si l'élément cliqué n'est pas un bouton
   if (event.target.tagName !== 'BUTTON') {
+    const listItem = event.target.closest("li");
+
+    if (!listItem) {
+      return;
+    }
+
+    const todoId = listItem.dataset.todoId;
+
     // Applique ou supprime le style de texte barré pour indiquer l'état de complétion du todo
     event.target.style.textDecoration = event.target.style.textDecoration == '' ? 'line-through' : '';
-
-    // Récupère le texte du todo
-    const todoText = event.target.textContent;
 
     // Récupère les todos depuis le localStorage
     const todos = JSON.parse(localStorage.getItem('todos')) || [];
 
     // Trouve l'index du todo dans le tableau des todos
-    const todoIndex = todos.findIndex(todo => todo.text === todoText);
+    const todoIndex = todos.findIndex(todo => todo.id === todoId);
+
+    if (todoIndex === -1) {
+      return;
+    }
 
     // Inverse l'état de complétion du todo
     todos[todoIndex].isCompleted = !todos[todoIndex].isCompleted;
@@ -208,6 +242,10 @@ todos.sort(function(a, b) {
 
   // Parcourt chaque todo dans le tableau trié et crée un élément correspondant dans l'interface
   todos.forEach(function(todo) {
-    createTodoElement(todo.text, todo.priority, todo.isCompleted);
+    createTodoElement(todo.text, todo.priority, todo.isCompleted, todo.id);
   });
+}
+
+function createTodoId() {
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
